@@ -1,0 +1,17 @@
+{
+  "name": "arabic-discord-moderation-bot",
+  "version": "1.0.0",
+  "description": "Discord bot with Arabic room lock, unlock, and auto-reply commands.",
+  "main": "index.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "discord.js": "^14.21.0",
+    "dotenv": "^16.6.1"
+  }
+}
