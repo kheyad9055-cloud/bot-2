@@ -63,6 +63,7 @@ const ticketButton = new ActionRowBuilder().addComponents(
   new ButtonBuilder()
     .setCustomId('unclaim_ticket')
     .setLabel('فك الاستلام')
+    .setEmoji({ id: '1046291630321315871', name: 'madinat', animated: true })
     .setStyle(ButtonStyle.Secondary),
 );
 
