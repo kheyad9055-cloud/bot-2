@@ -60,6 +60,10 @@ const ticketButton = new ActionRowBuilder().addComponents(
     .setLabel('إغلاق التذكرة')
     .setEmoji({ id: '1475160139874041866', name: 'false', animated: true })
     .setStyle(ButtonStyle.Danger),
+  new ButtonBuilder()
+    .setCustomId('unclaim_ticket')
+    .setLabel('فك الاستلام')
+    .setStyle(ButtonStyle.Secondary),
 );
 
 const closedTicketButtons = new ActionRowBuilder().addComponents(
@@ -460,6 +464,40 @@ client.on('interactionCreate', async (interaction) => {
       await interaction.channel.permissionOverwrites.delete(interaction.user.id).catch(() => null);
       console.error('Failed to claim ticket:', error);
       await interaction.editReply('تعذر استلام التذكرة. تأكد أن للبوت Manage Roles وأن رتبة التكت أسفل رتبة البوت.');
+    }
+    return;
+  }
+
+  if (interaction.customId === 'unclaim_ticket') {
+    const claimantId = claimedTickets.get(interaction.channel.id);
+
+    if (!claimantId) {
+      await interaction.reply({ content: 'هذه التذكرة غير مستلمة حاليًا.', ephemeral: true });
+      return;
+    }
+
+    if (claimantId !== interaction.user.id) {
+      await interaction.reply({ content: 'فك الاستلام متاح فقط للمسؤول الذي استلم التذكرة.', ephemeral: true });
+      return;
+    }
+
+    await interaction.deferReply();
+    try {
+      await interaction.channel.permissionOverwrites.edit(staffRoleId, {
+        ViewChannel: true,
+        SendMessages: true,
+        ReadMessageHistory: true,
+      });
+
+      if (interaction.user.id !== ownerId) {
+        await interaction.channel.permissionOverwrites.delete(interaction.user.id);
+      }
+
+      claimedTickets.delete(interaction.channel.id);
+      await interaction.editReply('تم فك استلام التذكرة، ويمكن للمسؤولين الكتابة فيها الآن.');
+    } catch (error) {
+      console.error('Failed to unclaim ticket:', error);
+      await interaction.editReply('تعذر فك استلام التذكرة.');
     }
     return;
   }
