@@ -99,6 +99,7 @@ const ticketTypeMenu = new ActionRowBuilder().addComponents(
 );
 
 const ticketReminderTimers = new Map();
+const claimedTickets = new Map();
 const reminderInterval = 10 * 60 * 1000;
 const ticketCloseDelay = 5 * 60 * 1000;
 
@@ -404,6 +405,17 @@ client.on('interactionCreate', async (interaction) => {
       return;
     }
 
+    const previousClaimantId = claimedTickets.get(interaction.channel.id);
+    if (previousClaimantId) {
+      await interaction.reply({
+        content: `تم استلام التذكرة سابقًا من قبل <@${previousClaimantId}>.`,
+        allowedMentions: { users: [previousClaimantId] },
+        ephemeral: true,
+      });
+      return;
+    }
+
+    claimedTickets.set(interaction.channel.id, interaction.user.id);
     await interaction.deferReply();
     try {
       const member = await interaction.guild.members.fetch(interaction.user.id);
@@ -414,6 +426,7 @@ client.on('interactionCreate', async (interaction) => {
         allowedMentions: { users: [interaction.user.id] },
       });
     } catch (error) {
+      claimedTickets.delete(interaction.channel.id);
       console.error('Failed to claim ticket:', error);
       await interaction.editReply('تعذر استلام التذكرة. تأكد أن للبوت Manage Roles وأن رتبة التكت أسفل رتبة البوت.');
     }
