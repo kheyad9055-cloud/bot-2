@@ -419,6 +419,16 @@ client.on('interactionCreate', async (interaction) => {
     await interaction.deferReply();
     try {
       const member = await interaction.guild.members.fetch(interaction.user.id);
+      await interaction.channel.permissionOverwrites.edit(staffRoleId, {
+        ViewChannel: false,
+        SendMessages: false,
+        ReadMessageHistory: false,
+      });
+      await interaction.channel.permissionOverwrites.edit(interaction.user.id, {
+        ViewChannel: true,
+        SendMessages: true,
+        ReadMessageHistory: true,
+      });
       await member.roles.add(ticketRoleId);
       const claimEmoji = interaction.client.emojis.cache.get('1259540712102297701');
       await interaction.editReply({
@@ -427,6 +437,12 @@ client.on('interactionCreate', async (interaction) => {
       });
     } catch (error) {
       claimedTickets.delete(interaction.channel.id);
+      await interaction.channel.permissionOverwrites.edit(staffRoleId, {
+        ViewChannel: true,
+        SendMessages: true,
+        ReadMessageHistory: true,
+      }).catch(() => null);
+      await interaction.channel.permissionOverwrites.delete(interaction.user.id).catch(() => null);
       console.error('Failed to claim ticket:', error);
       await interaction.editReply('تعذر استلام التذكرة. تأكد أن للبوت Manage Roles وأن رتبة التكت أسفل رتبة البوت.');
     }
