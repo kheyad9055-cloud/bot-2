@@ -429,7 +429,11 @@ client.on('interactionCreate', async (interaction) => {
         SendMessages: true,
         ReadMessageHistory: true,
       });
-      await member.roles.add(ticketRoleId);
+      try {
+        await member.roles.add(ticketRoleId);
+      } catch (error) {
+        console.error('Failed to add ticket role after claim:', error);
+      }
       const claimEmoji = interaction.client.emojis.cache.get('1259540712102297701');
       await interaction.editReply({
         content: `تم استلام التذكرة بواسطة ${interaction.user}${claimEmoji ? ` ${claimEmoji}` : ''}`,
