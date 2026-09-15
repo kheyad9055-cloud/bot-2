@@ -47,12 +47,12 @@ const ticketButton = new ActionRowBuilder().addComponents(
     .setStyle(ButtonStyle.Success),
   new ButtonBuilder()
     .setCustomId('summon_staff')
-    .setLabel('استدعاء الرتبة')
+    .setLabel('استدعاء مسوؤل التكت')
     .setEmoji({ id: '1259540687653830686', name: '6_', animated: true })
     .setStyle(ButtonStyle.Primary),
   new ButtonBuilder()
     .setCustomId('summon_owner')
-    .setLabel('استدعاء الأونر')
+    .setLabel('استدعاء صاحب التكت')
     .setEmoji({ id: '1259540687653830686', name: '6_', animated: true })
     .setStyle(ButtonStyle.Secondary),
   new ButtonBuilder()
