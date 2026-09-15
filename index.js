@@ -494,7 +494,7 @@ client.on('interactionCreate', async (interaction) => {
       }
 
       claimedTickets.delete(interaction.channel.id);
-      await interaction.editReply('تم فك استلام التذكرة، ويمكن للمسؤولين الكتابة فيها الآن.');
+      await interaction.editReply('تم فك استلام التذكرة، ويمكن للمسؤولين الان استلام.');
     } catch (error) {
       console.error('Failed to unclaim ticket:', error);
       await interaction.editReply('تعذر فك استلام التذكرة.');
