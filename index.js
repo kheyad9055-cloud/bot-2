@@ -74,10 +74,21 @@ const closedTicketButtons = new ActionRowBuilder().addComponents(
 );
 
 const ticketPanel = new ActionRowBuilder().addComponents(
-  new ButtonBuilder()
-    .setCustomId('open_ticket')
-    .setLabel('إنشاء التذاكر')
-    .setStyle(ButtonStyle.Primary),
+  new StringSelectMenuBuilder()
+    .setCustomId('ticket_type')
+    .setPlaceholder('اختر نوع التذكرة')
+    .addOptions(
+      {
+        label: 'الدعم الفني',
+        value: 'support',
+        description: 'للحصول على المساعدة والدعم',
+      },
+      {
+        label: 'الاقتراحات والشكاوى',
+        value: 'suggestions',
+        description: 'لإرسال اقتراح أو شكوى',
+      },
+    ),
 );
 
 const ticketTypeMenu = new ActionRowBuilder().addComponents(
