@@ -420,9 +420,9 @@ client.on('interactionCreate', async (interaction) => {
     try {
       const member = await interaction.guild.members.fetch(interaction.user.id);
       await interaction.channel.permissionOverwrites.edit(staffRoleId, {
-        ViewChannel: false,
+        ViewChannel: true,
         SendMessages: false,
-        ReadMessageHistory: false,
+        ReadMessageHistory: true,
       });
       await interaction.channel.permissionOverwrites.edit(interaction.user.id, {
         ViewChannel: true,
