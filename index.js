@@ -6,6 +6,7 @@ const {
   ButtonStyle,
   Client,
   ChannelType,
+  EmbedBuilder,
   GatewayIntentBits,
   PermissionsBitField,
   StringSelectMenuBuilder,
@@ -119,11 +120,16 @@ const ticketCloseDelay = 5 * 60 * 1000;
 
 const claimedTicketOwners = new Map();
 
-async function sendTicketLog(guild, content) {
+async function sendTicketLog(guild, title, fields, color = 0x5865f2) {
   try {
     const logChannel = await guild.channels.fetch(ticketLogChannelId);
     if (logChannel?.isTextBased()) {
-      await logChannel.send({ content, allowedMentions: { parse: [] } });
+      const embed = new EmbedBuilder()
+        .setTitle(title)
+        .setColor(color)
+        .addFields(fields)
+        .setTimestamp();
+      await logChannel.send({ embeds: [embed] });
     }
   } catch (error) {
     console.error('Failed to send ticket log:', error);
@@ -185,7 +191,13 @@ function startTicketReminder(channel, ownerId) {
           });
           await sendTicketLog(
             channel.guild,
-            `تم إغلاق التذكرة تلقائيًا: ${channel} | صاحب التذكرة: <@${ownerId}>`,
+            'TICKET_AUTO_CLOSED',
+            [
+              { name: '• معرف القناة', value: channel.id, inline: true },
+              { name: '• اسم القناة', value: `#${channel.name}`, inline: true },
+              { name: '• صاحب التذكرة', value: `<@${ownerId}>` },
+            ],
+            0xed4245,
           );
         } catch (error) {
           console.error('Failed to auto-close ticket:', error);
@@ -438,7 +450,13 @@ client.on('interactionCreate', async (interaction) => {
       });
       await sendTicketLog(
         interaction.guild,
-        `تم إنشاء تذكرة جديدة: ${ticketChannel} | النوع: **${typeLabel}** | العضو: <@${interaction.user.id}>`,
+        'TICKET_CREATED',
+        [
+          { name: '• نوع التذكرة', value: typeLabel, inline: true },
+          { name: '• اسم القناة', value: `#${ticketChannel.name}`, inline: true },
+          { name: '• صاحب التذكرة', value: `<@${interaction.user.id}>` },
+        ],
+        0x57f287,
       );
       startTicketReminder(ticketChannel, interaction.user.id);
       await interaction.reply({ content: `تم إنشاء تذكرتك: ${ticketChannel}`, ephemeral: true });
@@ -491,7 +509,13 @@ client.on('interactionCreate', async (interaction) => {
       });
       await sendTicketLog(
         interaction.guild,
-        `تم استلام التذكرة: ${interaction.channel} | المسؤول: <@${interaction.user.id}>`,
+        'TICKET_CLAIMED',
+        [
+          { name: '• المسؤول المستلم', value: `<@${interaction.user.id}>` },
+          { name: '• معرف القناة', value: interaction.channel.id, inline: true },
+          { name: '• اسم القناة', value: `#${interaction.channel.name}`, inline: true },
+        ],
+        0x57f287,
       );
     } catch (error) {
       console.error('Failed to claim ticket:', error);
@@ -526,7 +550,13 @@ client.on('interactionCreate', async (interaction) => {
       });
       await sendTicketLog(
         interaction.guild,
-        `تم فك استلام التذكرة: ${interaction.channel} | المسؤول: <@${interaction.user.id}>`,
+        'TICKET_UNCLAIMED',
+        [
+          { name: '• المسؤول', value: `<@${interaction.user.id}>` },
+          { name: '• معرف القناة', value: interaction.channel.id, inline: true },
+          { name: '• اسم القناة', value: `#${interaction.channel.name}`, inline: true },
+        ],
+        0xfee75c,
       );
     } catch (error) {
       console.error('Failed to unclaim ticket:', error);
@@ -582,7 +612,15 @@ client.on('interactionCreate', async (interaction) => {
       });
       await sendTicketLog(
         interaction.guild,
-        `تم إغلاق التذكرة: ${interaction.channel} | بواسطة: <@${interaction.user.id}>`,
+        'TICKET_CLOSED',
+        [
+          { name: '• أغلقها من قبل', value: `<@${interaction.user.id}>` },
+          { name: '• اسم المسؤول الذي أغلق', value: `<@${interaction.user.id}>` },
+          { name: '• معرف القناة', value: interaction.channel.id, inline: true },
+          { name: '• اسم القناة', value: `#${interaction.channel.name}`, inline: true },
+          { name: '• صاحب التذكرة', value: ownerId ? `<@${ownerId}>` : 'غير معروف' },
+        ],
+        0xed4245,
       );
     } catch (error) {
       console.error('Failed to close ticket:', error);
@@ -613,7 +651,14 @@ client.on('interactionCreate', async (interaction) => {
       });
       await sendTicketLog(
         interaction.guild,
-        `تم فتح التذكرة من جديد: ${interaction.channel} | بواسطة: <@${interaction.user.id}>`,
+        'TICKET_REOPENED',
+        [
+          { name: '• فتحها من قبل', value: `<@${interaction.user.id}>` },
+          { name: '• معرف القناة', value: interaction.channel.id, inline: true },
+          { name: '• اسم القناة', value: `#${interaction.channel.name}`, inline: true },
+          { name: '• صاحب التذكرة', value: ownerId ? `<@${ownerId}>` : 'غير معروف' },
+        ],
+        0x57f287,
       );
     } catch (error) {
       console.error('Failed to reopen ticket:', error);
@@ -626,7 +671,14 @@ client.on('interactionCreate', async (interaction) => {
     stopTicketReminder(interaction.channel.id);
     await sendTicketLog(
       interaction.guild,
-      `تم حذف التذكرة: #${interaction.channel.name} | بواسطة: <@${interaction.user.id}>`,
+      'TICKET_DELETED',
+      [
+        { name: '• حذفها من قبل', value: `<@${interaction.user.id}>` },
+        { name: '• معرف القناة', value: interaction.channel.id, inline: true },
+        { name: '• اسم القناة', value: `#${interaction.channel.name}`, inline: true },
+        { name: '• صاحب التذكرة', value: ownerId ? `<@${ownerId}>` : 'غير معروف' },
+      ],
+      0xed4245,
     );
     await interaction.reply('سيتم حذف التذكرة خلال 3 ثوانٍ.');
     setTimeout(() => interaction.channel?.delete().catch(() => null), 3000);
