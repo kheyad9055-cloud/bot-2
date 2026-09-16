@@ -45,6 +45,11 @@ const ticketButton = new ActionRowBuilder().addComponents(
     .setEmoji({ id: '1270029062647185439', name: 'online', animated: false })
     .setStyle(ButtonStyle.Success),
   new ButtonBuilder()
+    .setCustomId('unclaim_ticket')
+    .setLabel('فك الاستلام')
+    .setEmoji({ name: '↩️' })
+    .setStyle(ButtonStyle.Secondary),
+  new ButtonBuilder()
     .setCustomId('summon_staff')
     .setLabel('استدعاء الرتبة')
     .setEmoji({ id: '1259540687653830686', name: '6_', animated: true })
@@ -75,29 +80,34 @@ const closedTicketButtons = new ActionRowBuilder().addComponents(
 const ticketPanel = new ActionRowBuilder().addComponents(
   new ButtonBuilder()
     .setCustomId('open_ticket')
-    .setLabel('إنشاء التذاكر')
+    .setLabel('فتح قائمة الطلبات')
     .setStyle(ButtonStyle.Primary),
 );
 
 const ticketTypeMenu = new ActionRowBuilder().addComponents(
   new StringSelectMenuBuilder()
     .setCustomId('ticket_type')
-    .setPlaceholder('اختر خيار التذكرة')
+    .setPlaceholder('اختر نوع الطلب')
+    .setMinValues(1)
+    .setMaxValues(1)
     .addOptions(
       {
         label: 'الدعم الفني',
         value: 'support',
         description: 'للحصول على المساعدة والدعم',
+        emoji: { name: '🛠️' },
       },
       {
         label: 'الاقتراحات والشكاوى',
         value: 'suggestions',
         description: 'لإرسال اقتراح أو شكوى',
+        emoji: { name: '💬' },
       },
       {
         label: 'تقديم على الادونز',
         value: 'addons',
         description: 'للتقديم على الادونز والطلبات الخاصة',
+        emoji: { name: '📦' },
       },
     ),
 );
@@ -303,7 +313,7 @@ client.on('messageCreate', async (message) => {
 
   if (command === `${prefix}تذكرة` || command === `${prefix}ticket`) {
     await message.channel.send({
-      content: 'اضغط على الزر لإنشاء تذكرة جديدة.',
+      content: 'اختر نوع الطلب من القائمة أدناه.',
       components: [ticketPanel],
     });
     return;
@@ -318,7 +328,7 @@ client.on('messageCreate', async (message) => {
 client.on('interactionCreate', async (interaction) => {
   if (interaction.isButton() && interaction.customId === 'open_ticket') {
     await interaction.reply({
-      content: 'اختر نوع التذكرة من القائمة:',
+      content: 'اختر نوع الطلب المناسب لك من القائمة:',
       components: [ticketTypeMenu],
       ephemeral: true,
     });
@@ -413,18 +423,37 @@ client.on('interactionCreate', async (interaction) => {
       return;
     }
 
-    await interaction.deferReply();
     try {
       const member = await interaction.guild.members.fetch(interaction.user.id);
       await member.roles.add(ticketRoleId);
       const claimEmoji = interaction.client.emojis.cache.get('1259540712102297701');
-      await interaction.editReply({
+      await interaction.reply({
         content: `تم استلام التذكرة بواسطة ${interaction.user}${claimEmoji ? ` ${claimEmoji}` : ''}`,
         allowedMentions: { users: [interaction.user.id] },
       });
     } catch (error) {
       console.error('Failed to claim ticket:', error);
-      await interaction.editReply('تعذر استلام التذكرة. تأكد أن للبوت Manage Roles وأن رتبة التكت أسفل رتبة البوت.');
+      await interaction.reply('تعذر استلام التذكرة. تأكد أن للبوت Manage Roles وأن رتبة التكت أسفل رتبة البوت.');
+    }
+    return;
+  }
+
+  if (interaction.customId === 'unclaim_ticket') {
+    if (!isStaff) {
+      await interaction.reply({ content: 'هذا الزر للمسؤولين فقط.', ephemeral: true });
+      return;
+    }
+
+    try {
+      const member = await interaction.guild.members.fetch(interaction.user.id);
+      await member.roles.remove(ticketRoleId);
+      await interaction.reply({
+        content: `تم فك استلام التذكرة من ${interaction.user}`,
+        allowedMentions: { users: [interaction.user.id] },
+      });
+    } catch (error) {
+      console.error('Failed to unclaim ticket:', error);
+      await interaction.reply('تعذر فك الاستلام.');
     }
     return;
   }
@@ -516,3 +545,14 @@ client.on('interactionCreate', async (interaction) => {
 });
 
 client.login(token);
+const express = require('express');
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+app.get('/', (req, res) => {
+    res.send('Bot is running!');
+});
+
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Server is running on port ${PORT}`);
+});
