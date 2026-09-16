@@ -125,8 +125,31 @@ const ticketLogChannelId = '1549714536888532992';
 
 function logTicketEvent(eventName, details = {}) {
   const timestamp = new Date().toISOString();
-  const detailLines = Object.entries(details)
-    .map(([key, value]) => `- ${key}: ${String(value)}`);
+  const labels = {
+    userId: 'معرف المستخدم',
+    username: 'اسم المستخدم',
+    ticketType: 'نوع التذكرة',
+    typeLabel: 'اسم النوع',
+    channelId: 'معرف القناة',
+    channelName: 'اسم القناة',
+    claimedById: 'استلمها من قبل',
+    claimedByUsername: 'اسم المسؤول الذي استلم',
+    unclaimedById: 'فك الاستلام من قبل',
+    unclaimedByUsername: 'اسم المسؤول الذي فك الاستلام',
+    closedById: 'أغلقها من قبل',
+    closedByUsername: 'اسم المسؤول الذي أغلق',
+    reopenedById: 'أعاد فتحها من قبل',
+    reopenedByUsername: 'اسم المسؤول الذي أعاد الفتح',
+    deletedById: 'حذفها من قبل',
+    deletedByUsername: 'اسم المسؤول الذي حذف',
+    ownerId: 'صاحب التذكرة',
+  };
+
+  const detailLines = Object.entries(details).map(([key, value]) => {
+    const label = labels[key] || key;
+    const formattedValue = String(value);
+    return `- ${label}: ${formattedValue}`;
+  });
 
   const detailText = detailLines.length ? detailLines.join('\n') : 'لا توجد تفاصيل إضافية';
   const line = `[${timestamp}] ${eventName}\n${detailText}\n\n`;
@@ -134,8 +157,8 @@ function logTicketEvent(eventName, details = {}) {
 
   const logChannel = client.channels.cache.get(ticketLogChannelId);
   if (logChannel && logChannel.isTextBased && typeof logChannel.send === 'function') {
-    logChannel.send(`**${eventName}**\n${detailText}`)
-      .catch(() => null);
+    const finalMessage = `**${eventName}**\n${detailText}`;
+    logChannel.send(finalMessage).catch(() => null);
   }
 }
 
