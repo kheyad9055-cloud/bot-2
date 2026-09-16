@@ -51,12 +51,12 @@ const ticketButton = new ActionRowBuilder().addComponents(
     .setStyle(ButtonStyle.Secondary),
   new ButtonBuilder()
     .setCustomId('summon_staff')
-    .setLabel('استدعاء الرتبة')
+    .setLabel('استدعاء مسؤول التكت')
     .setEmoji({ id: '1259540687653830686', name: '6_', animated: true })
     .setStyle(ButtonStyle.Primary),
   new ButtonBuilder()
     .setCustomId('summon_owner')
-    .setLabel('استدعاء الأونر')
+    .setLabel('استدعاء صاحب التذكرة')
     .setEmoji({ id: '1259540687653830686', name: '6_', animated: true })
     .setStyle(ButtonStyle.Secondary),
   new ButtonBuilder()
@@ -115,6 +115,33 @@ const ticketTypeMenu = new ActionRowBuilder().addComponents(
 const ticketReminderTimers = new Map();
 const reminderInterval = 10 * 60 * 1000;
 const ticketCloseDelay = 5 * 60 * 1000;
+
+const claimedTicketOwners = new Map();
+
+async function claimTicketForStaff(channel, staffId) {
+  await channel.permissionOverwrites.edit(staffRoleId, {
+    ViewChannel: true,
+    SendMessages: false,
+  });
+  await channel.permissionOverwrites.edit(staffId, {
+    ViewChannel: true,
+    SendMessages: true,
+    ReadMessageHistory: true,
+  });
+  claimedTicketOwners.set(channel.id, staffId);
+}
+
+async function unclaimTicketForStaff(channel, staffId) {
+  await channel.permissionOverwrites.edit(staffRoleId, {
+    ViewChannel: true,
+    SendMessages: true,
+    ReadMessageHistory: true,
+  });
+  await channel.permissionOverwrites.edit(staffId, {
+    SendMessages: null,
+  });
+  claimedTicketOwners.delete(channel.id);
+}
 
 function stopTicketReminder(channelId) {
   const timers = ticketReminderTimers.get(channelId);
@@ -424,8 +451,19 @@ client.on('interactionCreate', async (interaction) => {
     }
 
     try {
+      const currentClaimerId = claimedTicketOwners.get(interaction.channel.id);
+      if (currentClaimerId && currentClaimerId !== interaction.user.id) {
+        await interaction.reply({
+          content: `التذكرة مستلمة من <@${currentClaimerId}>. يجب فك الاستلام أولًا.`,
+          allowedMentions: { users: [currentClaimerId] },
+          ephemeral: true,
+        });
+        return;
+      }
+
       const member = await interaction.guild.members.fetch(interaction.user.id);
       await member.roles.add(ticketRoleId);
+      await claimTicketForStaff(interaction.channel, interaction.user.id);
       const claimEmoji = interaction.client.emojis.cache.get('1259540712102297701');
       await interaction.reply({
         content: `تم استلام التذكرة بواسطة ${interaction.user}${claimEmoji ? ` ${claimEmoji}` : ''}`,
@@ -445,8 +483,19 @@ client.on('interactionCreate', async (interaction) => {
     }
 
     try {
+      const currentClaimerId = claimedTicketOwners.get(interaction.channel.id);
+      if (currentClaimerId && currentClaimerId !== interaction.user.id) {
+        await interaction.reply({
+          content: `لا يمكن فك الاستلام؛ التذكرة مستلمة من <@${currentClaimerId}>.`,
+          allowedMentions: { users: [currentClaimerId] },
+          ephemeral: true,
+        });
+        return;
+      }
+
       const member = await interaction.guild.members.fetch(interaction.user.id);
       await member.roles.remove(ticketRoleId);
+      await unclaimTicketForStaff(interaction.channel, interaction.user.id);
       await interaction.reply({
         content: `تم فك استلام التذكرة من ${interaction.user}`,
         allowedMentions: { users: [interaction.user.id] },
