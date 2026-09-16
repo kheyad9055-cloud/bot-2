@@ -147,7 +147,12 @@ function logTicketEvent(eventName, details = {}) {
 
   const detailLines = Object.entries(details).map(([key, value]) => {
     const label = labels[key] || key;
-    const formattedValue = String(value);
+    let formattedValue = String(value);
+
+    if (/Id$/i.test(key) && /^\d{17,20}$/.test(String(value))) {
+      formattedValue = `<@${String(value)}>`;
+    }
+
     return `- ${label}: ${formattedValue}`;
   });
 
