@@ -1,7 +1,4 @@
-
 require('dotenv').config();
-const fs = require('fs');
-const path = require('path');
 
 const {
   ActionRowBuilder,
@@ -49,12 +46,12 @@ const ticketButton = new ActionRowBuilder().addComponents(
     .setStyle(ButtonStyle.Success),
   new ButtonBuilder()
     .setCustomId('summon_staff')
-    .setLabel('استدعاء مسوؤل التكت')
+    .setLabel('استدعاء الرتبة')
     .setEmoji({ id: '1259540687653830686', name: '6_', animated: true })
     .setStyle(ButtonStyle.Primary),
   new ButtonBuilder()
     .setCustomId('summon_owner')
-    .setLabel('استدعاء صاحب التكت')
+    .setLabel('استدعاء الأونر')
     .setEmoji({ id: '1259540687653830686', name: '6_', animated: true })
     .setStyle(ButtonStyle.Secondary),
   new ButtonBuilder()
@@ -62,11 +59,6 @@ const ticketButton = new ActionRowBuilder().addComponents(
     .setLabel('إغلاق التذكرة')
     .setEmoji({ id: '1475160139874041866', name: 'false', animated: true })
     .setStyle(ButtonStyle.Danger),
-  new ButtonBuilder()
-    .setCustomId('unclaim_ticket')
-    .setLabel('فك الاستلام')
-    .setEmoji({ id: '1046291630321315871', name: 'madinat', animated: true })
-    .setStyle(ButtonStyle.Secondary),
 );
 
 const closedTicketButtons = new ActionRowBuilder().addComponents(
@@ -81,21 +73,10 @@ const closedTicketButtons = new ActionRowBuilder().addComponents(
 );
 
 const ticketPanel = new ActionRowBuilder().addComponents(
-  new StringSelectMenuBuilder()
-    .setCustomId('ticket_type')
-    .setPlaceholder('اختر نوع التذكرة')
-    .addOptions(
-      {
-        label: 'الدعم الفني',
-        value: 'support',
-        description: 'للحصول على المساعدة والدعم',
-      },
-      {
-        label: 'الاقتراحات والشكاوى',
-        value: 'suggestions',
-        description: 'لإرسال اقتراح أو شكوى',
-      },
-    ),
+  new ButtonBuilder()
+    .setCustomId('open_ticket')
+    .setLabel('إنشاء التذاكر')
+    .setStyle(ButtonStyle.Primary),
 );
 
 const ticketTypeMenu = new ActionRowBuilder().addComponents(
@@ -113,68 +94,17 @@ const ticketTypeMenu = new ActionRowBuilder().addComponents(
         value: 'suggestions',
         description: 'لإرسال اقتراح أو شكوى',
       },
+      {
+        label: 'تقديم على الادونز',
+        value: 'addons',
+        description: 'للتقديم على الادونز والطلبات الخاصة',
+      },
     ),
 );
 
 const ticketReminderTimers = new Map();
-const claimedTickets = new Map();
 const reminderInterval = 10 * 60 * 1000;
 const ticketCloseDelay = 5 * 60 * 1000;
-const ticketLogPath = path.join(__dirname, 'ticket-log.txt');
-const ticketLogChannelId = '1549714536888532992';
-
-function logTicketEvent(eventName, details = {}) {
-  const timestamp = new Date().toISOString();
-  const labels = {
-    userId: 'معرف المستخدم',
-    username: 'اسم المستخدم',
-    ticketType: 'نوع التذكرة',
-    typeLabel: 'اسم النوع',
-    channelId: 'معرف القناة',
-    channelName: 'اسم القناة',
-    claimedById: 'استلمها من قبل',
-    claimedByUsername: 'اسم المسؤول الذي استلم',
-    unclaimedById: 'فك الاستلام من قبل',
-    unclaimedByUsername: 'اسم المسؤول الذي فك الاستلام',
-    closedById: 'أغلقها من قبل',
-    closedByUsername: 'اسم المسؤول الذي أغلق',
-    reopenedById: 'أعاد فتحها من قبل',
-    reopenedByUsername: 'اسم المسؤول الذي أعاد الفتح',
-    deletedById: 'حذفها من قبل',
-    deletedByUsername: 'اسم المسؤول الذي حذف',
-    ownerId: 'صاحب التذكرة',
-  };
-
-  const detailLines = Object.entries(details).map(([key, value]) => {
-    const label = labels[key] || key;
-    let formattedValue = String(value);
-
-    if (/Id$/i.test(key) && /^\d{17,20}$/.test(String(value))) {
-      formattedValue = `<@${String(value)}>`;
-    }
-
-    return `- ${label}: ${formattedValue}`;
-  });
-
-  const mentionUserId = details.userId
-    || details.claimedById
-    || details.unclaimedById
-    || details.closedById
-    || details.reopenedById
-    || details.deletedById
-    || details.ownerId;
-
-  const mentionText = mentionUserId ? `<@${mentionUserId}>` : '';
-  const detailText = detailLines.length ? detailLines.join('\n') : 'لا توجد تفاصيل إضافية';
-  const line = `[${timestamp}] ${eventName}\n${detailText}\n\n`;
-  fs.appendFileSync(ticketLogPath, line, 'utf8');
-
-  const logChannel = client.channels.cache.get(ticketLogChannelId);
-  if (logChannel && logChannel.isTextBased && typeof logChannel.send === 'function') {
-    const finalMessage = `${mentionText ? `${mentionText}\n` : ''}**${eventName}**\n${detailText}`;
-    logChannel.send(finalMessage).catch(() => null);
-  }
-}
 
 function stopTicketReminder(channelId) {
   const timers = ticketReminderTimers.get(channelId);
@@ -199,11 +129,6 @@ function startTicketReminder(channel, ownerId) {
           await channel.permissionOverwrites.edit(ownerId, {
             ViewChannel: false,
             SendMessages: false,
-          });
-          logTicketEvent('TICKET_AUTO_CLOSED', {
-            channelId: channel.id,
-            channelName: channel.name,
-            ownerId,
           });
           await channel.send({
             content: 'تم إغلاق التذكرة تلقائيًا لعدم وجود رد خلال 5 دقائق.',
@@ -402,7 +327,12 @@ client.on('interactionCreate', async (interaction) => {
 
   if (interaction.isStringSelectMenu() && interaction.customId === 'ticket_type') {
     const ticketType = interaction.values[0];
-    const typeLabel = ticketType === 'support' ? 'الدعم الفني' : 'الاقتراحات والشكاوى';
+    const typeLabelMap = {
+      support: 'الدعم الفني',
+      suggestions: 'الاقتراحات والشكاوى',
+      addons: 'تقديم على الادونز',
+    };
+    const typeLabel = typeLabelMap[ticketType] || 'التذكرة';
     const botMember = interaction.guild.members.me;
 
     if (!botMember?.permissions.has(PermissionsBitField.Flags.ManageChannels)) {
@@ -453,14 +383,6 @@ client.on('interactionCreate', async (interaction) => {
         allowedMentions: { roles: [staffRoleId], users: [interaction.user.id] },
         components: [ticketButton],
       });
-      logTicketEvent('TICKET_CREATED', {
-        userId: interaction.user.id,
-        username: interaction.user.tag,
-        ticketType,
-        typeLabel,
-        channelId: ticketChannel.id,
-        channelName: ticketChannel.name,
-      });
       startTicketReminder(ticketChannel, interaction.user.id);
       await interaction.reply({ content: `تم إنشاء تذكرتك: ${ticketChannel}`, ephemeral: true });
     } catch (error) {
@@ -491,96 +413,18 @@ client.on('interactionCreate', async (interaction) => {
       return;
     }
 
-    const previousClaimantId = claimedTickets.get(interaction.channel.id);
-    if (previousClaimantId) {
-      await interaction.reply({
-        content: `تم استلام التذكرة سابقًا من قبل <@${previousClaimantId}>.`,
-        allowedMentions: { users: [previousClaimantId] },
-        ephemeral: true,
-      });
-      return;
-    }
-
-    claimedTickets.set(interaction.channel.id, interaction.user.id);
     await interaction.deferReply();
     try {
       const member = await interaction.guild.members.fetch(interaction.user.id);
-      await interaction.channel.permissionOverwrites.edit(staffRoleId, {
-        ViewChannel: true,
-        SendMessages: false,
-        ReadMessageHistory: true,
-      });
-      await interaction.channel.permissionOverwrites.edit(interaction.user.id, {
-        ViewChannel: true,
-        SendMessages: true,
-        ReadMessageHistory: true,
-      });
-      try {
-        await member.roles.add(ticketRoleId);
-      } catch (error) {
-        console.error('Failed to add ticket role after claim:', error);
-      }
+      await member.roles.add(ticketRoleId);
       const claimEmoji = interaction.client.emojis.cache.get('1259540712102297701');
-      logTicketEvent('TICKET_CLAIMED', {
-        claimedById: interaction.user.id,
-        claimedByUsername: interaction.user.tag,
-        channelId: interaction.channel.id,
-        channelName: interaction.channel.name,
-      });
       await interaction.editReply({
         content: `تم استلام التذكرة بواسطة ${interaction.user}${claimEmoji ? ` ${claimEmoji}` : ''}`,
         allowedMentions: { users: [interaction.user.id] },
       });
     } catch (error) {
-      claimedTickets.delete(interaction.channel.id);
-      await interaction.channel.permissionOverwrites.edit(staffRoleId, {
-        ViewChannel: true,
-        SendMessages: true,
-        ReadMessageHistory: true,
-      }).catch(() => null);
-      await interaction.channel.permissionOverwrites.delete(interaction.user.id).catch(() => null);
       console.error('Failed to claim ticket:', error);
       await interaction.editReply('تعذر استلام التذكرة. تأكد أن للبوت Manage Roles وأن رتبة التكت أسفل رتبة البوت.');
-    }
-    return;
-  }
-
-  if (interaction.customId === 'unclaim_ticket') {
-    const claimantId = claimedTickets.get(interaction.channel.id);
-
-    if (!claimantId) {
-      await interaction.reply({ content: 'هذه التذكرة غير مستلمة حاليًا.', ephemeral: true });
-      return;
-    }
-
-    if (claimantId !== interaction.user.id) {
-      await interaction.reply({ content: 'فك الاستلام متاح فقط للمسؤول الذي استلم التذكرة.', ephemeral: true });
-      return;
-    }
-
-    await interaction.deferReply();
-    try {
-      await interaction.channel.permissionOverwrites.edit(staffRoleId, {
-        ViewChannel: true,
-        SendMessages: true,
-        ReadMessageHistory: true,
-      });
-
-      if (interaction.user.id !== ownerId) {
-        await interaction.channel.permissionOverwrites.delete(interaction.user.id);
-      }
-
-      claimedTickets.delete(interaction.channel.id);
-      logTicketEvent('TICKET_UNCLAIMED', {
-        unclaimedById: interaction.user.id,
-        unclaimedByUsername: interaction.user.tag,
-        channelId: interaction.channel.id,
-        channelName: interaction.channel.name,
-      });
-      await interaction.editReply('تم فك استلام التذكرة، ويمكن للمسؤولين الان استلام.');
-    } catch (error) {
-      console.error('Failed to unclaim ticket:', error);
-      await interaction.editReply('تعذر فك استلام التذكرة.');
     }
     return;
   }
@@ -626,13 +470,6 @@ client.on('interactionCreate', async (interaction) => {
         ViewChannel: false,
         SendMessages: false,
       });
-      logTicketEvent('TICKET_CLOSED', {
-        closedById: interaction.user.id,
-        closedByUsername: interaction.user.tag,
-        channelId: interaction.channel.id,
-        channelName: interaction.channel.name,
-        ownerId,
-      });
       await interaction.message.edit({
         content: 'تم إغلاق التذكرة. يمكن للمسؤول فتحها أو حذفها.',
         components: [closedTicketButtons],
@@ -660,13 +497,6 @@ client.on('interactionCreate', async (interaction) => {
         SendMessages: true,
         ReadMessageHistory: true,
       });
-      logTicketEvent('TICKET_REOPENED', {
-        reopenedById: interaction.user.id,
-        reopenedByUsername: interaction.user.tag,
-        channelId: interaction.channel.id,
-        channelName: interaction.channel.name,
-        ownerId,
-      });
       await interaction.message.edit({
         content: 'تم فتح التذكرة من جديد.',
         components: [ticketButton],
@@ -680,28 +510,9 @@ client.on('interactionCreate', async (interaction) => {
 
   if (interaction.customId === 'delete_ticket') {
     stopTicketReminder(interaction.channel.id);
-    logTicketEvent('TICKET_DELETED', {
-      deletedById: interaction.user.id,
-      deletedByUsername: interaction.user.tag,
-      channelId: interaction.channel.id,
-      channelName: interaction.channel.name,
-      ownerId,
-    });
     await interaction.reply('سيتم حذف التذكرة خلال 3 ثوانٍ.');
     setTimeout(() => interaction.channel?.delete().catch(() => null), 3000);
   }
 });
 
 client.login(token);
-
-const express = require('express');
-const app = express();
-const PORT = process.env.PORT || 3000;
-
-app.get('/', (req, res) => {
-    res.send('Bot is running!');
-});
-
-app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
-});
