@@ -386,6 +386,8 @@ client.on('messageCreate', async (message) => {
 
   if (command === `${prefix}تذكرة` || command === `${prefix}ticket`) {
     await message.channel.send({
+      content: '@everyone',
+      allowedMentions: { parse: ['everyone'] },
       embeds: [ticketRulesEmbed],
       components: [ticketTypeMenu],
     });
