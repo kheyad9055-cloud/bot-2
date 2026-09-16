@@ -15,6 +15,7 @@ const token = process.env.DISCORD_TOKEN;
 const staffRoleId = process.env.STAFF_ROLE_ID || '1546846949691498577';
 const ticketRoleId = '1546846949691498577';
 const summonRoleId = '1546846949691498577';
+const ticketLogChannelId = '1549714536888532992';
 
 
 
@@ -118,6 +119,17 @@ const ticketCloseDelay = 5 * 60 * 1000;
 
 const claimedTicketOwners = new Map();
 
+async function sendTicketLog(guild, content) {
+  try {
+    const logChannel = await guild.channels.fetch(ticketLogChannelId);
+    if (logChannel?.isTextBased()) {
+      await logChannel.send({ content, allowedMentions: { parse: [] } });
+    }
+  } catch (error) {
+    console.error('Failed to send ticket log:', error);
+  }
+}
+
 async function claimTicketForStaff(channel, staffId) {
   await channel.permissionOverwrites.edit(staffRoleId, {
     ViewChannel: true,
@@ -171,6 +183,10 @@ function startTicketReminder(channel, ownerId) {
             content: 'تم إغلاق التذكرة تلقائيًا لعدم وجود رد خلال 5 دقائق.',
             components: [closedTicketButtons],
           });
+          await sendTicketLog(
+            channel.guild,
+            `تم إغلاق التذكرة تلقائيًا: ${channel} | صاحب التذكرة: <@${ownerId}>`,
+          );
         } catch (error) {
           console.error('Failed to auto-close ticket:', error);
         } finally {
@@ -420,6 +436,10 @@ client.on('interactionCreate', async (interaction) => {
         allowedMentions: { roles: [staffRoleId], users: [interaction.user.id] },
         components: [ticketButton],
       });
+      await sendTicketLog(
+        interaction.guild,
+        `تم إنشاء تذكرة جديدة: ${ticketChannel} | النوع: **${typeLabel}** | العضو: <@${interaction.user.id}>`,
+      );
       startTicketReminder(ticketChannel, interaction.user.id);
       await interaction.reply({ content: `تم إنشاء تذكرتك: ${ticketChannel}`, ephemeral: true });
     } catch (error) {
@@ -469,6 +489,10 @@ client.on('interactionCreate', async (interaction) => {
         content: `تم استلام التذكرة بواسطة ${interaction.user}${claimEmoji ? ` ${claimEmoji}` : ''}`,
         allowedMentions: { users: [interaction.user.id] },
       });
+      await sendTicketLog(
+        interaction.guild,
+        `تم استلام التذكرة: ${interaction.channel} | المسؤول: <@${interaction.user.id}>`,
+      );
     } catch (error) {
       console.error('Failed to claim ticket:', error);
       await interaction.reply('تعذر استلام التذكرة. تأكد أن للبوت Manage Roles وأن رتبة التكت أسفل رتبة البوت.');
@@ -500,6 +524,10 @@ client.on('interactionCreate', async (interaction) => {
         content: `تم فك استلام التذكرة من ${interaction.user}`,
         allowedMentions: { users: [interaction.user.id] },
       });
+      await sendTicketLog(
+        interaction.guild,
+        `تم فك استلام التذكرة: ${interaction.channel} | المسؤول: <@${interaction.user.id}>`,
+      );
     } catch (error) {
       console.error('Failed to unclaim ticket:', error);
       await interaction.reply('تعذر فك الاستلام.');
@@ -552,6 +580,10 @@ client.on('interactionCreate', async (interaction) => {
         content: 'تم إغلاق التذكرة. يمكن للمسؤول فتحها أو حذفها.',
         components: [closedTicketButtons],
       });
+      await sendTicketLog(
+        interaction.guild,
+        `تم إغلاق التذكرة: ${interaction.channel} | بواسطة: <@${interaction.user.id}>`,
+      );
     } catch (error) {
       console.error('Failed to close ticket:', error);
       await interaction.followUp({ content: 'تعذر إغلاق التذكرة.', ephemeral: true }).catch(() => null);
@@ -579,6 +611,10 @@ client.on('interactionCreate', async (interaction) => {
         content: 'تم فتح التذكرة من جديد.',
         components: [ticketButton],
       });
+      await sendTicketLog(
+        interaction.guild,
+        `تم فتح التذكرة من جديد: ${interaction.channel} | بواسطة: <@${interaction.user.id}>`,
+      );
     } catch (error) {
       console.error('Failed to reopen ticket:', error);
       await interaction.followUp({ content: 'تعذر فتح التذكرة.', ephemeral: true }).catch(() => null);
@@ -588,6 +624,10 @@ client.on('interactionCreate', async (interaction) => {
 
   if (interaction.customId === 'delete_ticket') {
     stopTicketReminder(interaction.channel.id);
+    await sendTicketLog(
+      interaction.guild,
+      `تم حذف التذكرة: #${interaction.channel.name} | بواسطة: <@${interaction.user.id}>`,
+    );
     await interaction.reply('سيتم حذف التذكرة خلال 3 ثوانٍ.');
     setTimeout(() => interaction.channel?.delete().catch(() => null), 3000);
   }
