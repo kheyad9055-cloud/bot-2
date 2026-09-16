@@ -151,15 +151,22 @@ function logTicketEvent(eventName, details = {}) {
     return `- ${label}: ${formattedValue}`;
   });
 
-  const mentionUserId = '1040711511028547667';
-  const mentionText = `<@${mentionUserId}>`;
+  const mentionUserId = details.userId
+    || details.claimedById
+    || details.unclaimedById
+    || details.closedById
+    || details.reopenedById
+    || details.deletedById
+    || details.ownerId;
+
+  const mentionText = mentionUserId ? `<@${mentionUserId}>` : '';
   const detailText = detailLines.length ? detailLines.join('\n') : 'لا توجد تفاصيل إضافية';
   const line = `[${timestamp}] ${eventName}\n${detailText}\n\n`;
   fs.appendFileSync(ticketLogPath, line, 'utf8');
 
   const logChannel = client.channels.cache.get(ticketLogChannelId);
   if (logChannel && logChannel.isTextBased && typeof logChannel.send === 'function') {
-    const finalMessage = `${mentionText}\n**${eventName}**\n${detailText}`;
+    const finalMessage = `${mentionText ? `${mentionText}\n` : ''}**${eventName}**\n${detailText}`;
     logChannel.send(finalMessage).catch(() => null);
   }
 }
