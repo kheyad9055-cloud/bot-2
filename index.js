@@ -114,6 +114,24 @@ const ticketTypeMenu = new ActionRowBuilder().addComponents(
     ),
 );
 
+const ticketRulesEmbed = new EmbedBuilder()
+  .setColor(0x202225)
+  .setTitle('قوانين التذاكر')
+  .setDescription([
+    '• الاحترام واجب وعدم التجاهل في التكت.',
+    '• يمنع الفلص أو النقاشات خارج موضوع التذكرة.',
+    '• في حال قمت بفتح تكت أدخل بالموضوع مباشرة.',
+    '• يمنع السب والشتم أو الإهانة.',
+    '• يجب أن تكون مشكلتك واضحة ومكتوبة بالتفصيل.',
+    '• يمنع الإزعاج أو الإشارة إلى المستخدمين داخل التذكرة.',
+    '• في حال احتجت إلى مساعدة اذكر جميع التفاصيل.',
+    '',
+    '**يجب عليك تعبئة البيانات قبل فتح التذكرة بشكل كامل.**',
+    '',
+    'بخلاف ذلك يحق للإدارة إغلاق التذكرة مباشرة.',
+  ].join('\n'))
+  .setFooter({ text: 'Powered By | FiveLab' });
+
 const ticketReminderTimers = new Map();
 const reminderInterval = 10 * 60 * 1000;
 const ticketCloseDelay = 5 * 60 * 1000;
@@ -368,8 +386,8 @@ client.on('messageCreate', async (message) => {
 
   if (command === `${prefix}تذكرة` || command === `${prefix}ticket`) {
     await message.channel.send({
-      content: 'اختر نوع الطلب من القائمة أدناه.',
-      components: [ticketPanel],
+      embeds: [ticketRulesEmbed],
+      components: [ticketTypeMenu],
     });
     return;
   }
