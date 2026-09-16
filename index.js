@@ -125,16 +125,16 @@ const ticketLogChannelId = '1549714536888532992';
 
 function logTicketEvent(eventName, details = {}) {
   const timestamp = new Date().toISOString();
-  const detailText = Object.entries(details)
-    .map(([key, value]) => `${key}=${String(value)}`)
-    .join(' | ');
+  const detailLines = Object.entries(details)
+    .map(([key, value]) => `- ${key}: ${String(value)}`);
 
-  const line = `[${timestamp}] ${eventName}${detailText ? ` | ${detailText}` : ''}\n`;
+  const detailText = detailLines.length ? detailLines.join('\n') : 'لا توجد تفاصيل إضافية';
+  const line = `[${timestamp}] ${eventName}\n${detailText}\n\n`;
   fs.appendFileSync(ticketLogPath, line, 'utf8');
 
   const logChannel = client.channels.cache.get(ticketLogChannelId);
   if (logChannel && logChannel.isTextBased && typeof logChannel.send === 'function') {
-    logChannel.send(`**${eventName}**\n${detailText || 'لا توجد تفاصيل إضافية'}`)
+    logChannel.send(`**${eventName}**\n${detailText}`)
       .catch(() => null);
   }
 }
