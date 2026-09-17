@@ -705,7 +705,7 @@ client.on('interactionCreate', async (interaction) => {
   }
 });
 
-client.login(token);
+client.login(process.env.DISCORD_TOKEN);
 const express = require('express');
 const app = express();
 const PORT = process.env.PORT || 3000;
