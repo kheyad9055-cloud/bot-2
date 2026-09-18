@@ -117,6 +117,7 @@ const ticketTypeMenu = new ActionRowBuilder().addComponents(
 const ticketRulesEmbed = new EmbedBuilder()
   .setColor(0x202225)
   .setTitle('قوانين التذاكر')
+  .setImage('https://cdn.discordapp.com/attachments/1546845982237397015/1550415324606627860/Gemini_Generated_Image_ki1tt9ki1tt9ki1t_1.jpg?ex=6aae404a&is=6aaceeca&hm=7de02f4f4d6565989314d8bddf17ad8a8e8a03515ba50ba1f5b3de7384091ff6&')
   .setDescription([
     '• الاحترام واجب وعدم التجاهل في التكت.',
     '• يمنع الفلص أو النقاشات خارج موضوع التذكرة.',
